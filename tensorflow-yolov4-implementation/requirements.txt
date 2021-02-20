@@ -6,3 +6,8 @@ absl-py
 easydict
 matplotlib
 pillow
+
+//Addition:
+tf-nightly-gpu lib
+CUDA Toolkit 10.1 update2
+cuDNN v7.6.5 (November 5th, 2019), for CUDA 10.1 (cudnn-10.1-windows10-x64-v7.6.5.32)
