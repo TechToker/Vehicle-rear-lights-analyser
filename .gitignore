@@ -1,0 +1,5 @@
+tensorflow-yolov4-implementation/checkpoints/yolov4-416/saved_model.pb
+tensorflow-yolov4-implementation/checkpoints/yolov4-416/variables/variables.data-00000-of-00001
+tensorflow-yolov4-implementation/checkpoints/yolov4-416/variables/variables.index
+tensorflow-yolov4-implementation/data/custom-yolov4-detector_best.weights
+tensorflow-yolov4-implementation/data/yolov4.weights
