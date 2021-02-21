@@ -1,6 +1,6 @@
 import cv2
-cap = cv2.VideoCapture(r'C:\video\carvideo.mp4')
-car_cascade = cv2.CascadeClassifier(r'C:\video\cars.xml')
+cap = cv2.VideoCapture('./testing_data/road_8sec.mp4')
+car_cascade = cv2.CascadeClassifier('./testing_data/cars.xml')
 
 while True:
 
