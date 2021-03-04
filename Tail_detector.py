@@ -26,13 +26,13 @@ car_img = cv2.imread('./testing_data/car_go_2.png', cv2.IMREAD_COLOR)
 car_img_rgb = cv2.cvtColor(car_img, cv2.COLOR_BGR2RGB)
 car_img = cv2.cvtColor(car_img, cv2.COLOR_BGR2YCrCb)
 
-plate_points = np.array([[656, 565], [1206, 565], [1206, 1047], [656, 1047]], np.int32)
-
-startX = min(plate_points[:, 0])
-finishX = max(plate_points[:, 0])
-
-startY = min(plate_points[:, 1])
-finishY = max(plate_points[:, 1])
+# plate_points = np.array([[656, 565], [1206, 565], [1206, 1047], [656, 1047]], np.int32)
+#
+# startX = min(plate_points[:, 0])
+# finishX = max(plate_points[:, 0])
+#
+# startY = min(plate_points[:, 1])
+# finishY = max(plate_points[:, 1])
 
 #plate_img = car_img[startY: finishY, startX: finishX]
 
