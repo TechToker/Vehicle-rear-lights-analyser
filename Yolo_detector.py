@@ -1,10 +1,19 @@
 import cv2
 import numpy as np
-import time
 import TailDetector as tl
 
 
 cap = cv2.VideoCapture('./testing_data/road_8sec.mp4')
+
+#settings for saving video
+(grabbed, frame) = cap.read()
+fshape = frame.shape
+fheight = fshape[0]
+fwidth = fshape[1]
+
+
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out = cv2.VideoWriter('./testing_data/road_8sec_result.mp4',fourcc, 20.0, (fwidth,fheight))
 
 classesFile = './Yolo_conf/coco.names'
 modelConfiguration = './Yolo_conf/yolov3.cfg'
@@ -52,13 +61,14 @@ def findObjects(outputs, img):
         for det in output:
             scores = det[5:]
             classId = np.argmax(scores)
-            confidence = scores[classId]
-            if confidence > confTresh:
-                w, h = int(det[2] * wT), int(det[3] * hT)
-                x, y = int((det[0] * wT) - w / 2), int((det[1] * hT) - h / 2)
-                bbox.append([x, y, w, h])
-                classIds.append(classId)
-                confs.append(float(confidence))
+            if (classId > 0 and classId < 7):
+                confidence = scores[classId]
+                if confidence > confTresh:
+                    w, h = int(det[2] * wT), int(det[3] * hT)
+                    x, y = int((det[0] * wT) - w / 2), int((det[1] * hT) - h / 2)
+                    bbox.append([x, y, w, h])
+                    classIds.append(classId)
+                    confs.append(float(confidence))
 
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
@@ -69,13 +79,14 @@ def findObjects(outputs, img):
         findTails(img, car_box)
 
     cv2.imshow("Image", img)
+    out.write(img)
 
 
 while True:
-    startCyclTime = time.time()
 
     success, img = cap.read()
-
+    if success == False:
+        break
     blob = cv2.dnn.blobFromImage(img, 1 / 255, (whT, whT), [0, 0, 0], 1, crop=False)
     net.setInput(blob)
 
@@ -85,8 +96,9 @@ while True:
     outputs = net.forward(outputNames)
     findObjects(outputs, img)
 
-    endCyclTime = time.time()
-    print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
 
     if cv2.waitKey(33) == 13:
         break
+cap.release()
+out.release()
+cv2.destroyAllWindows()
