@@ -37,17 +37,18 @@ nmsTresh = 0.3
 
 def findTails(img, car_box):
     x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
+    if x <= 0 or y <= 0 or w == 0 or h == 0:
+        return
 
-    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 100), 1)
+    cropped_img = img[y:y + h, x:x + w]
+    tail_lights_bboxes = tl.TailDetector(cropped_img)
 
-    if x > 0 and y > 0 and w > 0 and h > 0:
-        cropped_img = img[y:y + h, x:x + w]
-        cropped_img, tail_lights_bboxes = tl.TailDetector(cropped_img)
+    # WTF??? (Need to check that list not empty)
+    if tail_lights_bboxes.size == 1:
+        return
 
-        for b_ind in range(0, len(tail_lights_bboxes)):
-            tail_bbox = tail_lights_bboxes[b_ind]
-            cv2.rectangle(img, (x + tail_bbox[0][0], y + tail_bbox[0][1]), (x + tail_bbox[2][0], y + tail_bbox[2][1]),
-                          (52, 64, 235), 1)
+    for bbox in tail_lights_bboxes:
+        cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
 
 
 # reduce if want less boxes
@@ -73,10 +74,15 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    for i in indx:
-        i = i[0]
-        car_box = bbox[i]
+    #for i in range(0, 1):
+
+    for i in range(0, len(indx)):
+        ind = indx[i][0]
+        car_box = bbox[ind]
         findTails(img, car_box)
+
+        # x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
+        # img = img[y:y + h, x:x + w]
 
     cv2.imshow("Image", img)
     out.write(img)
@@ -85,8 +91,10 @@ def findObjects(outputs, img):
 while True:
 
     success, img = cap.read()
-    if success == False:
+
+    if not success:
         break
+
     blob = cv2.dnn.blobFromImage(img, 1 / 255, (whT, whT), [0, 0, 0], 1, crop=False)
     net.setInput(blob)
 
@@ -96,9 +104,9 @@ while True:
     outputs = net.forward(outputNames)
     findObjects(outputs, img)
 
-
     if cv2.waitKey(33) == 13:
         break
+
 cap.release()
 out.release()
 cv2.destroyAllWindows()
