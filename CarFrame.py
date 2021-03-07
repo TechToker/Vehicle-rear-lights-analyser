@@ -18,7 +18,3 @@ class CarFrame:
 
     def GetFrame(self):
         return self.frame
-
-
-# obj = CarFrame(15, [5, 5])
-# print(obj.GetFrame())

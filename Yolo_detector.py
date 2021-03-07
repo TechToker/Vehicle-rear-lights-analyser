@@ -15,7 +15,7 @@ fwidth = fshape[1]
 
 
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('./testing_data/road_8sec_result.mp4',fourcc, 20.0, (fwidth,fheight))
+out = cv2.VideoWriter('./testing_data/road_8sec_result.mp4', fourcc, 20.0, (fwidth, fheight))
 
 classesFile = './Yolo_conf/coco.names'
 modelConfiguration = './Yolo_conf/yolov3.cfg'
@@ -51,8 +51,8 @@ def findTails(img, car_box):
     if tail_lights_bboxes.size == 1:
         return
 
-    for bbox in tail_lights_bboxes:
-        cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
+    # for bbox in tail_lights_bboxes:
+    #     cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
 
     return img
 
@@ -60,6 +60,7 @@ def findTails(img, car_box):
 def BoundingBoxProcessing(source_img, bbox):
     timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
 
+    frameStorage.ClearLongTimeUndetectableCars(timestamp)
     car_id = frameStorage.GetCarId(timestamp, bbox, 9)
 
     findTails(source_img, bbox)
@@ -93,8 +94,8 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    for i in range(0, 1):
-    #for i in range(0, len(indx)):
+    #for i in range(0, 3):
+    for i in range(0, len(indx)):
         ind = indx[i][0]
         car_box = bbox[ind]
         BoundingBoxProcessing(img, car_box)

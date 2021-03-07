@@ -14,7 +14,3 @@ class DetectedCar:
 
     def GetLastFrame(self):
         return self.frames[len(self.frames) - 1]
-
-
-# obj = DetectedCar(5)
-# print(obj.GetId())
