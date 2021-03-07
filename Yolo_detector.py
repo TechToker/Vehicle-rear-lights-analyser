@@ -1,9 +1,11 @@
 import cv2
 import numpy as np
 import TailDetector as tl
+import time
 
+from FramesStorage import *
 
-cap = cv2.VideoCapture('./testing_data/road_8sec.mp4')
+cap = cv2.VideoCapture('./testing_data/road_0.mp4')
 
 #settings for saving video
 (grabbed, frame) = cap.read()
@@ -34,6 +36,8 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 confTresh = 0.5
 nmsTresh = 0.3
 
+frameStorage = FramesStorage()
+
 
 def findTails(img, car_box):
     x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
@@ -49,6 +53,21 @@ def findTails(img, car_box):
 
     for bbox in tail_lights_bboxes:
         cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
+
+    return img
+
+
+def BoundingBoxProcessing(source_img, bbox):
+    timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+
+    car_id = frameStorage.GetCarId(timestamp, bbox, 9)
+
+    findTails(source_img, bbox)
+
+    x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+    cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
+
+    cv2.putText(source_img, f"Id: {car_id}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
 
 
 # reduce if want less boxes
@@ -74,22 +93,17 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    #for i in range(0, 1):
-
-    for i in range(0, len(indx)):
+    for i in range(0, 1):
+    #for i in range(0, len(indx)):
         ind = indx[i][0]
         car_box = bbox[ind]
-        findTails(img, car_box)
-
-        # x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
-        # img = img[y:y + h, x:x + w]
+        BoundingBoxProcessing(img, car_box)
 
     cv2.imshow("Image", img)
-    out.write(img)
-
+    # out.write(img)
 
 while True:
-
+    startCyclTime = time.time()
     success, img = cap.read()
 
     if not success:
@@ -103,6 +117,9 @@ while True:
 
     outputs = net.forward(outputNames)
     findObjects(outputs, img)
+
+    endCyclTime = time.time()
+    print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
 
     if cv2.waitKey(33) == 13:
         break

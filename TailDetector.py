@@ -101,7 +101,7 @@ def GetThresholdImg(img):
     #     ret, th_Cr = cv2.threshold(car_img_Cr, max_red_intensity - lower_threshold, 255, cv2.THRESH_BINARY)
 
     # cv2.imshow("Image12", car_img_Cr)
-    # cv2.imshow("Image14", th_Cr)
+    #cv2.imshow("Image14", th_Cr)
 
     # hist_full = cv2.calcHist([car_img_Cr], [0], None, [256], [0, 256])
     # plt.plot(hist_full, color='r')
@@ -111,7 +111,7 @@ def GetThresholdImg(img):
 
 
 def MorphologicalOperations(img):
-    kernel = np.ones((3, 3), np.uint8)
+    kernel = np.ones((2, 2), np.uint8)
     erosion = cv2.erode(img, kernel, iterations=1)
 
     kernel = np.ones((9, 9), np.uint8)
@@ -125,7 +125,7 @@ def MorphologicalOperations(img):
 
 def DrawBestPair(img, pair, labels):
     if len(pair) == 0:
-        #cv2.imshow("Output", img)
+        cv2.imshow("Output", img)
         return
 
     zone_i = pair[0]
@@ -140,7 +140,7 @@ def DrawBestPair(img, pair, labels):
     cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
     cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
-    #cv2.imshow("Output", img)
+    cv2.imshow("Output", img)
 
     rects = []
     rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
