@@ -11,7 +11,7 @@ IS_FPS_SHOW = False
 
 cap = cv2.VideoCapture('./testing_data/road_5.mp4')
 
-#settings for saving video
+# Settings for saving video
 (grabbed, frame) = cap.read()
 fshape = frame.shape
 fheight = fshape[0]
@@ -19,7 +19,7 @@ fwidth = fshape[1]
 
 
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('./testing_data/road_8sec_result.mp4', fourcc, 20.0, (fwidth, fheight))
+out = cv2.VideoWriter('./testing_data/_resulting_video.mp4', fourcc, 20.0, (fwidth, fheight))
 
 classesFile = './Yolo_conf/coco.names'
 modelConfiguration = './Yolo_conf/yolov3.cfg'
