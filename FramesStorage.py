@@ -1,16 +1,15 @@
 from DetectedCar import *
 from CarFrame import *
 import math as math
-
 import cv2
 
-boxes_distance_threshold = 200
+boxes_distance_threshold = 80
 boxes_size_threshold = [30, 30]
 
-
 # After what time remove undetectable car from list
-# In mls
-undetectableCarTimeToLive = 600
+# In milliseconds
+undetectableCarTimeToLive = 100
+
 
 class FramesStorage:
     detected_cars = []
@@ -31,6 +30,10 @@ class FramesStorage:
 
         return car_id
 
+    def ClearOldFrames(self, current_time):
+        for car in self.detected_cars:
+            car.RemoveOldFrames(current_time)
+
     def ClearLongTimeUndetectableCars(self, current_time):
 
         # Reverse loop
@@ -40,9 +43,8 @@ class FramesStorage:
             car = self.detected_cars[cur_ind]
             lastCarFrame = car.GetLastFrame()
 
-            #print(f"TTR: {car.GetId()}; {lastCarFrame.GetTime()}; cur time: {current_time}")
             if lastCarFrame.GetTime() + undetectableCarTimeToLive < current_time:
-                print(f"Remove car: {car.GetId()}; {lastCarFrame.GetTime()}")
+                print(f"Remove car {car.GetId()}; CurrentTime:{current_time}, LastDetected: {lastCarFrame.GetTime()}")
 
                 self.detected_cars.pop(cur_ind)
 
@@ -60,12 +62,6 @@ class FramesStorage:
                 car = self.detected_cars[i]
 
                 lastFrameCentroid = car.GetLastFrame().GetCentroid()
-
-                lastBox = car.GetLastFrame().GetBoundingBox()
-                lastCarCenter = [lastBox[0] + (int(lastBox[2] - lastBox[0]) / 2), lastBox[1] + (int(lastBox[3] - lastBox[1]) / 2)]
-
-                #print(f"Center:{lastCarCenter}; Centroid:{lastFrameCentroid}")
-
                 distanceToCenter = math.dist(lastFrameCentroid, newBoxCenter)
 
                 if distanceToCenter < nearCarDistance:

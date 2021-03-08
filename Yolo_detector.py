@@ -9,7 +9,7 @@ from FramesStorage import *
 IS_FPS_SHOW = False
 
 
-cap = cv2.VideoCapture('./testing_data/tracking_test.mp4')
+cap = cv2.VideoCapture('./testing_data/road_5.mp4')
 
 #settings for saving video
 (grabbed, frame) = cap.read()
@@ -56,6 +56,28 @@ def findTails(img, cropped_img):
     return img
 
 
+# Duplicate of method from TailDetector
+# TODO: Find more clever solution
+def GetColor(id):
+    colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0],
+              [255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0]]
+    return colors[0]
+
+
+def DrawCarPath(source_img, path, car_id):
+    # Loop from old to new points
+    for ind in range(len(path)):
+        color = GetColor(car_id)
+
+        # TODO: FIX THAT
+        color[0] -= (len(path) - ind) * 5
+        color[1] -= (len(path) - ind) * 5
+        color[2] -= (len(path) - ind) * 5
+
+        point = path[ind]
+        cv2.circle(source_img, (int(point[0]), int(point[1])), 3, color, -1)
+
+
 def BoundingBoxProcessing(source_img, bbox):
     x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
     if x <= 0 or y <= 0 or w == 0 or h == 0:
@@ -66,12 +88,12 @@ def BoundingBoxProcessing(source_img, bbox):
     timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
 
     frameStorage.ClearLongTimeUndetectableCars(timestamp)
+    frameStorage.ClearOldFrames(timestamp)
 
     car_id = frameStorage.GetCarId(timestamp, bbox, cropped_img)
 
     path = frameStorage.GetCarPath(car_id)
-    for point in path:
-        cv2.circle(source_img, (int(point[0]), int(point[1])), 3, (255, 0, 0), -1)
+    DrawCarPath(source_img, path, car_id)
 
     findTails(source_img, cropped_img)
 
