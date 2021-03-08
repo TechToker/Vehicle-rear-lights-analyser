@@ -5,7 +5,11 @@ import time
 
 from FramesStorage import *
 
-cap = cv2.VideoCapture('./testing_data/road_0.mp4')
+# Settings
+IS_FPS_SHOW = False
+
+
+cap = cv2.VideoCapture('./testing_data/tracking_test.mp4')
 
 #settings for saving video
 (grabbed, frame) = cap.read()
@@ -39,12 +43,7 @@ nmsTresh = 0.3
 frameStorage = FramesStorage()
 
 
-def findTails(img, car_box):
-    x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
-    if x <= 0 or y <= 0 or w == 0 or h == 0:
-        return
-
-    cropped_img = img[y:y + h, x:x + w]
+def findTails(img, cropped_img):
     tail_lights_bboxes = tl.TailDetector(cropped_img)
 
     # WTF??? (Need to check that list not empty)
@@ -58,12 +57,23 @@ def findTails(img, car_box):
 
 
 def BoundingBoxProcessing(source_img, bbox):
+    x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+    if x <= 0 or y <= 0 or w == 0 or h == 0:
+        return
+
+    cropped_img = img[y:y + h, x:x + w]
+
     timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
 
     frameStorage.ClearLongTimeUndetectableCars(timestamp)
-    car_id = frameStorage.GetCarId(timestamp, bbox, 9)
 
-    findTails(source_img, bbox)
+    car_id = frameStorage.GetCarId(timestamp, bbox, cropped_img)
+
+    path = frameStorage.GetCarPath(car_id)
+    for point in path:
+        cv2.circle(source_img, (int(point[0]), int(point[1])), 3, (255, 0, 0), -1)
+
+    findTails(source_img, cropped_img)
 
     x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
     cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
@@ -94,14 +104,15 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    #for i in range(0, 3):
+    #for i in range(0, 1):
     for i in range(0, len(indx)):
         ind = indx[i][0]
         car_box = bbox[ind]
         BoundingBoxProcessing(img, car_box)
 
     cv2.imshow("Image", img)
-    # out.write(img)
+    out.write(img)
+
 
 while True:
     startCyclTime = time.time()
@@ -120,7 +131,9 @@ while True:
     findObjects(outputs, img)
 
     endCyclTime = time.time()
-    print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
+
+    if IS_FPS_SHOW:
+        print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
 
     if cv2.waitKey(33) == 13:
         break

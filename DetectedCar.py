@@ -14,3 +14,9 @@ class DetectedCar:
 
     def GetLastFrame(self):
         return self.frames[len(self.frames) - 1]
+
+    def GetFirstFrame(self):
+        return self.frames[0]
+
+    def GetAllFrames(self):
+        return self.frames

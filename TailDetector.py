@@ -118,7 +118,7 @@ def MorphologicalOperations(img):
     dilation = cv2.dilate(erosion, kernel, iterations=2)
 
     # cv2.imshow("Erosion", erosion)
-    # cv2.imshow("Dilation", dilation)
+    #cv2.imshow("Dilation", dilation)
 
     return dilation
 
@@ -140,7 +140,7 @@ def DrawBestPair(img, pair, labels):
     # cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
     # cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
-    #cv2.imshow("Output", img)
+    cv2.imshow("Output", img)
 
     rects = []
     rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
