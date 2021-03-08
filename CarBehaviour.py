@@ -31,8 +31,8 @@ def CarBehaviour(img1,img2):
 
 
 
-print(CarBehaviour(car_not_stop,car_stop))
-#
+# print(CarBehaviour(car_not_stop,car_stop))
+# #
 # cv2.imshow("not_stop",CarBehaviour(car_not_stop,car_stop))
 # cv2.imshow("stop",CarBehaviour(car_stop,car_not_stop))
-cv2.waitKey(0)
+# cv2.waitKey(0)

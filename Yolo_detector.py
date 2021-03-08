@@ -5,7 +5,7 @@ import time
 
 from FramesStorage import *
 
-cap = cv2.VideoCapture('./testing_data/road_0.mp4')
+cap = cv2.VideoCapture('./testing_data/road_2.mp4')
 
 #settings for saving video
 (grabbed, frame) = cap.read()
@@ -94,14 +94,14 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    #for i in range(0, 3):
-    for i in range(0, len(indx)):
+    for i in range(0, 1):
+    #for i in range(0, len(indx)):
         ind = indx[i][0]
         car_box = bbox[ind]
         BoundingBoxProcessing(img, car_box)
 
     cv2.imshow("Image", img)
-    # out.write(img)
+    out.write(img)
 
 while True:
     startCyclTime = time.time()

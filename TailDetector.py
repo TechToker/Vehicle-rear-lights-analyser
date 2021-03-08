@@ -2,27 +2,8 @@ from matplotlib import pyplot as plt
 import numpy as np
 import cv2
 import sys
+import CarBehaviour
 
-
-
-
-# def PlotImageRow(list_of_images, titles=None, disable_ticks=False, size=10):
-#     count = len(list_of_images)
-#     plt.figure(figsize=(size, size))
-#     for idx in range(count):
-#         subplot = plt.subplot(1, count, idx + 1)
-#         if titles is not None:
-#             subplot.set_title(titles[idx])
-#
-#         img = list_of_images[idx]
-#
-#         cmap = 'gray' if (len(img.shape) == 2 or img.shape[2] == 1) else None
-#         subplot.imshow(img, cmap=cmap)
-#
-#         if disable_ticks:
-#             plt.xticks([]), plt.yticks([])
-#
-#     plt.show()
 
 def generate_colors(num):
     #r = lambda: np.random.randint(0, 255)
@@ -40,12 +21,6 @@ def SymmetryTest(img, n_labels, labels, stats, centroids):
     light_pairs = []
 
     colors = generate_colors(n_labels)
-
-    # print(img.shape)
-    #
-    # cent_x, cent_y = int(centroids[0, 0]), int(centroids[0, 1])
-    # cv2.circle(source_img, (cent_x, cent_y), 3, (128, 128, 128), -1)
-    # cv2.putText(source_img, f"{0}; {cent_x, cent_y}", (cent_x, cent_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (128, 128, 128), 1)
 
     for (i, label) in enumerate(range(1, n_labels)):
         # centroid coordinates
@@ -78,7 +53,7 @@ def SymmetryTest(img, n_labels, labels, stats, centroids):
                 # cv2.imshow("Image2", labeled_image)
                 # return light_pairs
 
-    #cv2.imshow("Image21", labeled_image)
+    # cv2.imshow("Image21", labeled_image)
     return light_pairs
 
 
@@ -92,20 +67,6 @@ def GetThresholdImg(img):
     th_Y = cv2.adaptiveThreshold(car_img_Y, 150, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, c_value)
     th_Cr = cv2.adaptiveThreshold(car_img_Cr, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, c_value)
 
-    # If amount of enabled pixels lower than 5 => hystogram approach
-    # th_Cr_1dim = np.array(th_Cr)
-    # if sum(th_Cr_1dim > 0) < 5:
-    #     max_red_intensity = np.amax(car_img_Cr)
-    #     lower_threshold = 10
-    #
-    #     ret, th_Cr = cv2.threshold(car_img_Cr, max_red_intensity - lower_threshold, 255, cv2.THRESH_BINARY)
-
-    # cv2.imshow("Image12", car_img_Cr)
-    #cv2.imshow("Image14", th_Cr)
-
-    # hist_full = cv2.calcHist([car_img_Cr], [0], None, [256], [0, 256])
-    # plt.plot(hist_full, color='r')
-    # plt.show()
 
     return th_Cr
 
@@ -131,16 +92,20 @@ def DrawBestPair(img, pair, labels):
     zone_i = pair[0]
     zone_j = pair[1]
 
+
+
     ymax_i, xmax_i = np.max(np.where(labels == zone_i), 1)
     ymin_i, xmin_i = np.min(np.where(labels == zone_i), 1)
 
     ymax_j, xmax_j = np.max(np.where(labels == zone_j), 1)
     ymin_j, xmin_j = np.min(np.where(labels == zone_j), 1)
+    #
 
-    # cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
-    # cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
-    #cv2.imshow("Output", img)
+    cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
+    cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
+    #
+    # cv2.imshow("Output", img)
 
     rects = []
     rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
@@ -150,11 +115,12 @@ def DrawBestPair(img, pair, labels):
 
 
 def TailDetector(img):
-    car_img_rgb = img.copy()
     img_yCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
 
     threshold_img = GetThresholdImg(img_yCrCb)
     morpho_img = MorphologicalOperations(threshold_img)
+
+    #cv2.imshow('m',morpho_img)
 
     connectivity = 4
     n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(morpho_img, connectivity, cv2.CV_32S)
@@ -168,19 +134,28 @@ def TailDetector(img):
         part_1 = pair[0]
         part_2 = pair[1]
 
+        # print(part_1,part_2)
         surf1 = len([element for element in labels.flatten() if element == part_1])
         surf2 = len([element for element in labels.flatten() if element == part_2])
 
+
         surface_sum = surf1 + surf2
 
+
+
         if surface_sum > max_surface_value:
+            max_surface_value = surface_sum
             pair_with_max_surface = pair
+            #print(("max_surface_value {}.".format(max_surface_value)))
+
+
 
     bboxes = DrawBestPair(img, pair_with_max_surface, labels)
+    print(bboxes)
 
     return np.array(bboxes)
 
 
-# car_img = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
-# TailDetector(car_img)
-# cv2.waitKey(0)
+car_img = cv2.imread('./testing_data/car_stopped.png', cv2.IMREAD_COLOR)
+TailDetector(car_img)
+cv2.waitKey(0)
