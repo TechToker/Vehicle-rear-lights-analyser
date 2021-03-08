@@ -125,7 +125,7 @@ def MorphologicalOperations(img):
 
 def DrawBestPair(img, pair, labels):
     if len(pair) == 0:
-        cv2.imshow("Output", img)
+        #cv2.imshow("Output", img)
         return
 
     zone_i = pair[0]
@@ -140,7 +140,7 @@ def DrawBestPair(img, pair, labels):
     # cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
     # cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
-    cv2.imshow("Output", img)
+    #cv2.imshow("Output", img)
 
     rects = []
     rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
