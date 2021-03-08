@@ -175,6 +175,7 @@ def TailDetector(img):
 
         if surface_sum > max_surface_value:
             pair_with_max_surface = pair
+            max_surface_value = surface_sum
 
     bboxes = DrawBestPair(img, pair_with_max_surface, labels)
 
