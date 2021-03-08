@@ -1,12 +1,13 @@
 import cv2
 import TailDetector as tl
 
-car_stop = cv2.imread('./testing_data/car_stopped.png', cv2.IMREAD_COLOR)
-car_not_stop = cv2.imread('./testing_data/car_not_stopped.png', cv2.IMREAD_COLOR)
+car_stop = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
+car_not_stop = cv2.imread('./testing_data/car_example_5_1.png', cv2.IMREAD_COLOR)
 
 
 def CarBehaviour(img1,img2):
 
+    beh = ''
     bbox_img1 = tl.TailDetector(img1)
     bbox_img2 = tl.TailDetector(img2)
 
@@ -22,7 +23,7 @@ def CarBehaviour(img1,img2):
     left_light_img2 = img2[y:y + h, x:x + w]
 
     #самый тупой способ
-    status = None
+    status = False
     img1_yCrCb_r = cv2.cvtColor(right_light_img1, cv2.COLOR_BGR2YCrCb)
     img1_yCrCb_l = cv2.cvtColor(left_light_img1, cv2.COLOR_BGR2YCrCb)
 
@@ -42,7 +43,6 @@ def CarBehaviour(img1,img2):
     ret2, thresh2_r = cv2.threshold(img2_Cr_r, 200, 255, cv2.THRESH_BINARY)
     ret, thresh2_l = cv2.threshold(img2_Cr_l, 200, 255, cv2.THRESH_BINARY)
 
-
     non1_r = cv2.countNonZero(thresh1_r)
     non1_l = cv2.countNonZero(thresh1_l)
 
@@ -55,14 +55,19 @@ def CarBehaviour(img1,img2):
     difference = abs(non1 - non2)
 
     print(difference)
-    #не знаю как корректнее сделать пока что от балды
-    if difference > 1000:
-        status = 'braking'
-    else:
-        status ='driving'
 
-    return status
-#
+    if difference > 800:
+        status = True
+
+    if status == True:
+        difference = non1 - non2
+        if difference >0:
+            beh = 'off'
+        else:
+            beh = 'on'
+
+    return f"Is status changed -  {status}, the light are {beh}"
+
 print(CarBehaviour(car_stop,car_not_stop))
 # #
 # cv2.imshow("not_stop",CarBehaviour(car_not_stop,car_stop))
