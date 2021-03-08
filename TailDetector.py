@@ -1,28 +1,11 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
-import sys
+from FramesStorage import *
 
+# In mls
+BRAKE_ANALYSIS_TIME = 100
 
-
-
-# def PlotImageRow(list_of_images, titles=None, disable_ticks=False, size=10):
-#     count = len(list_of_images)
-#     plt.figure(figsize=(size, size))
-#     for idx in range(count):
-#         subplot = plt.subplot(1, count, idx + 1)
-#         if titles is not None:
-#             subplot.set_title(titles[idx])
-#
-#         img = list_of_images[idx]
-#
-#         cmap = 'gray' if (len(img.shape) == 2 or img.shape[2] == 1) else None
-#         subplot.imshow(img, cmap=cmap)
-#
-#         if disable_ticks:
-#             plt.xticks([]), plt.yticks([])
-#
-#     plt.show()
 
 def generate_colors(num):
     #r = lambda: np.random.randint(0, 255)
@@ -181,6 +164,20 @@ def TailDetector(img):
 
     return np.array(bboxes)
 
+
+def AnalyzeCarStatus(current_time, car):
+    prev_car_frame = car.GetFrameFromPast(current_time, BRAKE_ANALYSIS_TIME)
+    if prev_car_frame is None:
+        return
+
+    cur_frame = car.GetLastFrame().GetImage()
+    cv2.imshow("CurrentCar", cur_frame)
+    cv2.imshow("CarFromPast", prev_car_frame.GetImage())
+
+    return False, False
+
+
+# Uncommit it to test it on signe image
 
 # car_img = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
 # TailDetector(car_img)

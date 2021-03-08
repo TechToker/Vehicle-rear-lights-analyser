@@ -3,12 +3,12 @@ from CarFrame import *
 import math as math
 import cv2
 
-boxes_distance_threshold = 80
+boxes_distance_threshold = 200
 boxes_size_threshold = [30, 30]
 
 # After what time remove undetectable car from list
 # In milliseconds
-undetectableCarTimeToLive = 100
+undetectableCarTimeToLive = 500
 
 
 class FramesStorage:
@@ -28,7 +28,7 @@ class FramesStorage:
 
         print(f"Find new car! Id: {car_id}")
 
-        return car_id
+        return detectedCar
 
     def ClearOldFrames(self, current_time):
         for car in self.detected_cars:
@@ -48,10 +48,11 @@ class FramesStorage:
 
                 self.detected_cars.pop(cur_ind)
 
-    def GetCarId(self, time, bounding_box, crop_img):
+    def GetCar(self, time, bounding_box, crop_img):
         car_frame = CarFrame(time, bounding_box, crop_img)
-
         newBoxCenter = [bounding_box[0] + int(bounding_box[2] / 2), bounding_box[1] + int(bounding_box[3] / 2)]
+
+        detectedCar = None
 
         if len(self.detected_cars) > 0:
 
@@ -69,14 +70,14 @@ class FramesStorage:
                     nearCarDistance = distanceToCenter
 
             if nearCarDistance < boxes_distance_threshold:
-                car_id = nearDetectedCar.GetId()
+                detectedCar = nearDetectedCar
                 nearDetectedCar.AddFrame(car_frame)
             else:
-                car_id = self.AddNewCarToList(car_frame)
+                detectedCar = self.AddNewCarToList(car_frame)
         else:
-            car_id = self.AddNewCarToList(car_frame)
+            detectedCar = self.AddNewCarToList(car_frame)
 
-        return car_id
+        return detectedCar
 
     def GetCarPath(self, carId):
         car = next((car for car in self.detected_cars if car.GetId() == carId), None)

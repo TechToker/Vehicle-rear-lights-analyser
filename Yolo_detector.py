@@ -7,20 +7,21 @@ from FramesStorage import *
 
 # Settings
 IS_FPS_SHOW = False
-
-
-cap = cv2.VideoCapture('./testing_data/road_5.mp4')
+BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
+CAR_ID_TO_PROCESS = 0 # Process only the car with this id; "-1" - process all
 
 # Settings for saving video
+cap = cv2.VideoCapture('./testing_data/road_2.mp4')
+
 (grabbed, frame) = cap.read()
 fshape = frame.shape
 fheight = fshape[0]
 fwidth = fshape[1]
 
-
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
 out = cv2.VideoWriter('./testing_data/_resulting_video.mp4', fourcc, 20.0, (fwidth, fheight))
 
+# YOLO params
 classesFile = './Yolo_conf/coco.names'
 modelConfiguration = './Yolo_conf/yolov3.cfg'
 modelWeights = './Yolo_conf/yolov3.weights'
@@ -43,17 +44,22 @@ nmsTresh = 0.3
 frameStorage = FramesStorage()
 
 
-def findTails(img, cropped_img):
-    tail_lights_bboxes = tl.TailDetector(cropped_img)
+def GetCurrentTimestamp():
+    return cap.get(cv2.CAP_PROP_POS_MSEC)
+
+
+def TailsProcessing(car):
+    tl.AnalyzeCarStatus(GetCurrentTimestamp(), car)
+
+    #tail_lights_bboxes = tl.TailDetector(cropped_img)
 
     # WTF??? (Need to check that list not empty)
-    if tail_lights_bboxes.size == 1:
-        return
+    # if tail_lights_bboxes.size == 1:
+    #     return
 
     # for bbox in tail_lights_bboxes:
     #     cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
 
-    return img
 
 
 # Duplicate of method from TailDetector
@@ -75,6 +81,8 @@ def DrawCarPath(source_img, path, car_id):
         color[2] -= (len(path) - ind) * 5
 
         point = path[ind]
+
+        # TODO: Add circle size changing
         cv2.circle(source_img, (int(point[0]), int(point[1])), 3, color, -1)
 
 
@@ -83,79 +91,86 @@ def BoundingBoxProcessing(source_img, bbox):
     if x <= 0 or y <= 0 or w == 0 or h == 0:
         return
 
-    cropped_img = img[y:y + h, x:x + w]
+    cropped_img = source_img[y:y + h, x:x + w]
 
-    timestamp = cap.get(cv2.CAP_PROP_POS_MSEC)
+    timestamp = GetCurrentTimestamp()
 
     frameStorage.ClearLongTimeUndetectableCars(timestamp)
     frameStorage.ClearOldFrames(timestamp)
 
-    car_id = frameStorage.GetCarId(timestamp, bbox, cropped_img)
+    current_car = frameStorage.GetCar(timestamp, bbox, cropped_img)
+    car_id = current_car.GetId()
 
+    if CAR_ID_TO_PROCESS >= 0 and not car_id == CAR_ID_TO_PROCESS:
+        return
+
+    # Tracked path
     path = frameStorage.GetCarPath(car_id)
     DrawCarPath(source_img, path, car_id)
 
-    findTails(source_img, cropped_img)
+    # Tails
+    TailsProcessing(current_car)
 
-    x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
+    # Visualisation
     cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
-
     cv2.putText(source_img, f"Id: {car_id}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
 
 
-# reduce if want less boxes
-def findObjects(outputs, img):
+def GetDetections(outputs, img):
     hT, wT, cT = img.shape
     bbox = []
     classIds = []
-    confs = []
+    confidences = []
 
     for output in outputs:
         for det in output:
             scores = det[5:]
             classId = np.argmax(scores)
-            if (classId > 0 and classId < 7):
+
+            if 0 < classId < 7:
                 confidence = scores[classId]
                 if confidence > confTresh:
                     w, h = int(det[2] * wT), int(det[3] * hT)
                     x, y = int((det[0] * wT) - w / 2), int((det[1] * hT) - h / 2)
+
                     bbox.append([x, y, w, h])
                     classIds.append(classId)
-                    confs.append(float(confidence))
+                    confidences.append(float(confidence))
 
     # Non-max suppression
-    indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
+    indexes = cv2.dnn.NMSBoxes(bbox, confidences, confTresh, nmsTresh)
 
-    #for i in range(0, 1):
-    for i in range(0, len(indx)):
-        ind = indx[i][0]
-        car_box = bbox[ind]
-        BoundingBoxProcessing(img, car_box)
+    bounding_boxes_amount = BOUNDING_BOXES_LIMIT if BOUNDING_BOXES_LIMIT > 0 else len(indexes)
+
+    for i in range(0, bounding_boxes_amount):
+        ind = indexes[i][0]
+        car_bbox = bbox[ind]
+        BoundingBoxProcessing(img, car_bbox)
 
     cv2.imshow("Image", img)
     out.write(img)
 
 
 while True:
-    startCyclTime = time.time()
-    success, img = cap.read()
+    startCycleTime = time.time()
+    success, frame_img = cap.read()
 
     if not success:
         break
 
-    blob = cv2.dnn.blobFromImage(img, 1 / 255, (whT, whT), [0, 0, 0], 1, crop=False)
+    blob = cv2.dnn.blobFromImage(frame_img, 1 / 255, (whT, whT), [0, 0, 0], 1, crop=False)
     net.setInput(blob)
 
     layerNames = net.getLayerNames()
     outputNames = [layerNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-    outputs = net.forward(outputNames)
-    findObjects(outputs, img)
+    detections = net.forward(outputNames)
+    GetDetections(detections, frame_img)
 
-    endCyclTime = time.time()
+    endCycleTime = time.time()
 
     if IS_FPS_SHOW:
-        print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
+        print(f'FPS: {round(1 / (endCycleTime - startCycleTime), 2)}')
 
     if cv2.waitKey(33) == 13:
         break

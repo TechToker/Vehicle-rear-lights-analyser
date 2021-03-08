@@ -27,5 +27,10 @@ class DetectedCar:
 
     def RemoveOldFrames(self, current_time):
         cleaned_list = [frame for frame in self.frames if frame.GetTime() + FRAME_LIFETIME >= current_time]
-        #print(f"[Remove old frames] Car {self.id}; amount: {len(self.frames) - len(cleaned_list)}")
         self.frames = cleaned_list
+
+    def GetFrameFromPast(self, current_time, time_ago):
+        # Reverse loop
+        for i in range(len(self.frames) - 1, -1, -1):
+            if self.frames[i].GetTime() < current_time - time_ago:
+                return self.frames[i]
