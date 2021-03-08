@@ -1,8 +1,7 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import cv2
-import sys
-import CarBehaviour
+
 
 
 def generate_colors(num):
@@ -86,7 +85,7 @@ def MorphologicalOperations(img):
 
 def DrawBestPair(img, pair, labels):
     if len(pair) == 0:
-        cv2.imshow("Output", img)
+        # cv2.imshow("Output", img)
         return
 
     zone_i = pair[0]
@@ -104,13 +103,15 @@ def DrawBestPair(img, pair, labels):
 
     cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
     cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
-    #
-    # cv2.imshow("Output", img)
+
+
+    cv2.imshow("Output", img)
 
     rects = []
     rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
+    # print("rect1 {}".format(rects))
     rects.append([[xmin_j, ymin_j], [xmax_j, ymax_j]])
-
+    # print("rect2 {}".format(rects))
     return rects
 
 
@@ -120,7 +121,7 @@ def TailDetector(img):
     threshold_img = GetThresholdImg(img_yCrCb)
     morpho_img = MorphologicalOperations(threshold_img)
 
-    #cv2.imshow('m',morpho_img)
+    # cv2.imshow('m',morpho_img)
 
     connectivity = 4
     n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(morpho_img, connectivity, cv2.CV_32S)
@@ -138,24 +139,20 @@ def TailDetector(img):
         surf1 = len([element for element in labels.flatten() if element == part_1])
         surf2 = len([element for element in labels.flatten() if element == part_2])
 
-
         surface_sum = surf1 + surf2
-
-
 
         if surface_sum > max_surface_value:
             max_surface_value = surface_sum
             pair_with_max_surface = pair
             #print(("max_surface_value {}.".format(max_surface_value)))
 
+    best_pair_bboxes = DrawBestPair(img, pair_with_max_surface, labels)
+
+    # print(best_pair_bboxes[0][0][1])
+    return np.array(best_pair_bboxes)
 
 
-    bboxes = DrawBestPair(img, pair_with_max_surface, labels)
-    print(bboxes)
 
-    return np.array(bboxes)
-
-
-car_img = cv2.imread('./testing_data/car_stopped.png', cv2.IMREAD_COLOR)
-TailDetector(car_img)
-cv2.waitKey(0)
+# car_img = cv2.imread('./testing_data/car_stopped.png', cv2.IMREAD_COLOR)
+# TailDetector(car_img)
+# cv2.waitKey(0)

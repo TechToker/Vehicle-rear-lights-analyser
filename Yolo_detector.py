@@ -5,7 +5,7 @@ import time
 
 from FramesStorage import *
 
-cap = cv2.VideoCapture('./testing_data/road_2.mp4')
+cap = cv2.VideoCapture('./testing_data/road_one_car.mp4')
 
 #settings for saving video
 (grabbed, frame) = cap.read()
@@ -15,7 +15,7 @@ fwidth = fshape[1]
 
 
 fourcc = cv2.VideoWriter_fourcc(*'XVID')
-out = cv2.VideoWriter('./testing_data/road_8sec_result.mp4', fourcc, 20.0, (fwidth, fheight))
+out = cv2.VideoWriter('./testing_data/resulting_road.mp4', fourcc, 20.0, (fwidth, fheight))
 
 classesFile = './Yolo_conf/coco.names'
 modelConfiguration = './Yolo_conf/yolov3.cfg'
@@ -43,7 +43,7 @@ def findTails(img, car_box):
     x, y, w, h = car_box[0], car_box[1], car_box[2], car_box[3]
     if x <= 0 or y <= 0 or w == 0 or h == 0:
         return
-
+    print(car_box)
     cropped_img = img[y:y + h, x:x + w]
     tail_lights_bboxes = tl.TailDetector(cropped_img)
 
@@ -67,7 +67,6 @@ def BoundingBoxProcessing(source_img, bbox):
 
     x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
     cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
-
     cv2.putText(source_img, f"Id: {car_id}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
 
 
@@ -94,8 +93,8 @@ def findObjects(outputs, img):
     # Non-max suppression
     indx = cv2.dnn.NMSBoxes(bbox, confs, confTresh, nmsTresh)
 
-    for i in range(0, 1):
-    #for i in range(0, len(indx)):
+    # for i in range(0, 1):
+    for i in range(0, len(indx)):
         ind = indx[i][0]
         car_box = bbox[ind]
         BoundingBoxProcessing(img, car_box)
@@ -117,10 +116,15 @@ while True:
     outputNames = [layerNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
     outputs = net.forward(outputNames)
+
     findObjects(outputs, img)
 
+    # cap.get(cv2.CAP_PROP_FPS)
+
+
+
     endCyclTime = time.time()
-    print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
+    # print(f'FPS: {round(1 / (endCyclTime - startCyclTime), 2)}')
 
     if cv2.waitKey(33) == 13:
         break

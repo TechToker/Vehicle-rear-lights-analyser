@@ -38,7 +38,7 @@ class FramesStorage:
             car = self.detected_cars[cur_ind]
             lastCarFrame = car.GetLastFrame()
 
-            print(f"TTR: {car.GetId()}; {lastCarFrame.GetTime()}; cur time: {current_time}")
+            # print(f"TTR: {car.GetId()}; {lastCarFrame.GetTime()}; cur time: {current_time}")
             if lastCarFrame.GetTime() + undetectableCarTimeToLive < current_time:
                 print(f"Remove car: {car.GetId()}; {lastCarFrame.GetTime()}")
 
