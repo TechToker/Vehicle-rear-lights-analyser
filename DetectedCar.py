@@ -1,10 +1,19 @@
+import enum
+
 # In seconds
 FRAME_LIFETIME = 2000
+
+
+class CarStatus(enum.Enum):
+    UNKNOWN = 0
+    NOT_BRAKING = 1
+    BRAKING = 2
 
 
 class DetectedCar:
     id = 0
     frames = []
+    status = CarStatus.UNKNOWN
 
     def __init__(self, car_id, first_frame):
         self.id = car_id
@@ -12,6 +21,12 @@ class DetectedCar:
 
     def GetId(self):
         return self.id
+
+    def SetStatus(self, newStatus):
+        self.status = newStatus
+
+    def GetStatus(self):
+        return self.status
 
     def AddFrame(self, frame):
         self.frames.append(frame)

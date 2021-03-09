@@ -4,7 +4,8 @@ import cv2
 from FramesStorage import *
 
 # In mls
-BRAKE_ANALYSIS_TIME = 100
+BRAKE_ANALYSIS_TIME = 150
+STATUS_CHANGE_THRESHOLD = 40
 
 
 def generate_colors(num):
@@ -12,6 +13,7 @@ def generate_colors(num):
     #return [(r(), r(), r()) for _ in range(num)]
 
     return [(208, 86, 93), (197, 162, 4), (233, 43, 131), (203, 208, 223), (18, 121, 41), (64, 85, 147),
+            (206, 187, 204), (36, 72, 148), (158, 11, 209), (36, 1, 154), (96, 53, 119), (230, 60, 218),
             (206, 187, 204), (36, 72, 148), (158, 11, 209), (36, 1, 154), (96, 53, 119), (230, 60, 218)]
 
 
@@ -109,7 +111,7 @@ def MorphologicalOperations(img):
 def DrawBestPair(img, pair, labels):
     if len(pair) == 0:
         #cv2.imshow("Output", img)
-        return
+        return pair
 
     zone_i = pair[0]
     zone_j = pair[1]
@@ -120,20 +122,21 @@ def DrawBestPair(img, pair, labels):
     ymax_j, xmax_j = np.max(np.where(labels == zone_j), 1)
     ymin_j, xmin_j = np.min(np.where(labels == zone_j), 1)
 
-    # cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
-    # cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
+    cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
+    cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
-    #cv2.imshow("Output", img)
+    #cv2.imshow(f"Output: {xmin_j}", img)
 
     rects = []
-    rects.append([[xmin_i, ymin_i], [xmax_i, ymax_i]])
-    rects.append([[xmin_j, ymin_j], [xmax_j, ymax_j]])
+    rects.append([xmin_i, ymin_i, xmax_i, ymax_i])
+    rects.append([xmin_j, ymin_j, xmax_j, ymax_j])
 
     return rects
 
 
 def TailDetector(img):
     car_img_rgb = img.copy()
+
     img_yCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
 
     threshold_img = GetThresholdImg(img_yCrCb)
@@ -162,7 +165,53 @@ def TailDetector(img):
 
     bboxes = DrawBestPair(img, pair_with_max_surface, labels)
 
-    return np.array(bboxes)
+    # TODO: Find third brake light
+
+    return np.array(bboxes), img_yCrCb
+
+import statistics
+
+# ! img in YCrCb
+def CalculateRednessInAreas(img, rects):
+    if len(rects) == 0:
+        return 0
+
+    # print(f"r: {rects.size}")
+    # print(f"r: {rects}")
+    # print(f"r: {rects is None}")
+
+    areas_mean = []
+    for i in range(len(rects)):
+        light_rect = rects[i]
+        crop_area = img[light_rect[1]: light_rect[3], light_rect[0]: light_rect[2]][:, :, 1]
+
+        #cv2.imshow(f"Light past{rects}", crop_area)
+        areas_mean.append(statistics.median(crop_area.flatten()))
+
+    return statistics.median(areas_mean)
+
+
+def CompareTails(img_from_past, img_actual):
+
+    res_past, past_img = TailDetector(img_from_past)
+    res_current, cur_img = TailDetector(img_actual)
+
+    past_redness_mean = CalculateRednessInAreas(past_img, res_past)
+    #print(f"Past car: {past_redness_mean}; len: {len(res_past)}")
+
+    actual_redness_mean = CalculateRednessInAreas(cur_img, res_current)
+    #print(f"Actual car: {actual_redness_mean}; len: {len(res_current)}")
+
+    #cv2.imshow(f"Light past", past_img)
+    #cv2.imshow(f"Light actual", cur_img)
+
+    if abs(past_redness_mean - actual_redness_mean) > STATUS_CHANGE_THRESHOLD:
+        if actual_redness_mean > past_redness_mean:
+            print(f"NewStatus: {CarStatus.BRAKING}; Past: {past_redness_mean} Actual: {actual_redness_mean}")
+        else:
+            print(f"NewStatus: {CarStatus.NOT_BRAKING}; Past: {past_redness_mean} Actual: {actual_redness_mean}")
+
+    return past_redness_mean, actual_redness_mean
 
 
 def AnalyzeCarStatus(current_time, car):
@@ -170,14 +219,27 @@ def AnalyzeCarStatus(current_time, car):
     if prev_car_frame is None:
         return
 
-    cur_frame = car.GetLastFrame().GetImage()
-    cv2.imshow("CurrentCar", cur_frame)
-    cv2.imshow("CarFromPast", prev_car_frame.GetImage())
+    actual_frame = car.GetLastFrame().GetImage()
+    past_frame = prev_car_frame.GetImage()
 
-    return False, False
+    past_redness, actual_redness = CompareTails(past_frame, actual_frame)
+
+    if abs(past_redness - actual_redness) > STATUS_CHANGE_THRESHOLD:
+        if actual_redness > past_redness:
+            car.SetStatus(CarStatus.BRAKING)
+            print(f"NewStatus: {CarStatus.BRAKING}; Past: {past_redness} Actual: {actual_redness}")
+        else:
+            car.SetStatus(CarStatus.NOT_BRAKING)
+            print(f"NewStatus: {CarStatus.NOT_BRAKING}; Past: {past_redness} Actual: {actual_redness}")
 
 
 # Uncommit it to test it on signe image
+
+past_frame = cv2.imread('./testing_data/car_example_9.png', cv2.IMREAD_COLOR)
+cur_frame = cv2.imread('./testing_data/car_example_10.png', cv2.IMREAD_COLOR)
+
+CompareTails(past_frame, cur_frame)
+cv2.waitKey(0)
 
 # car_img = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
 # TailDetector(car_img)

@@ -1,8 +1,8 @@
 import cv2
 import TailDetector as tl
 
-car_stop = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
-car_not_stop = cv2.imread('./testing_data/car_example_5_1.png', cv2.IMREAD_COLOR)
+car_stop = cv2.imread('./testing_data/car_example_10.png', cv2.IMREAD_COLOR)
+car_not_stop = cv2.imread('./testing_data/car_example_9.png', cv2.IMREAD_COLOR)
 
 
 def CarBehaviour(img1,img2):
@@ -70,6 +70,6 @@ def CarBehaviour(img1,img2):
 
 print(CarBehaviour(car_stop,car_not_stop))
 # #
-# cv2.imshow("not_stop",CarBehaviour(car_not_stop,car_stop))
-# cv2.imshow("stop",CarBehaviour(car_stop,car_not_stop))
+cv2.imshow("not_stop",CarBehaviour(car_not_stop,car_stop))
+cv2.imshow("stop",CarBehaviour(car_stop,car_not_stop))
 cv2.waitKey(0)

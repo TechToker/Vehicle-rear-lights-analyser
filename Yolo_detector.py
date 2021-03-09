@@ -7,7 +7,7 @@ from FramesStorage import *
 
 # Settings
 IS_FPS_SHOW = False
-BOUNDING_BOXES_LIMIT = 3 # if zero => unlimited
+BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
 CAR_ID_TO_PROCESS = 2 # Process only the car with this id; "-1" - process all
 
 # Settings for saving video
@@ -92,7 +92,7 @@ def BoundingBoxProcessing(source_img, bbox):
     if x <= 0 or y <= 0 or w == 0 or h == 0:
         return
 
-    cropped_img = source_img[y:y + h, x:x + w]
+    cropped_img = source_img[y:y + h, x:x + w].copy()
 
     timestamp = GetCurrentTimestamp()
 
@@ -115,6 +115,7 @@ def BoundingBoxProcessing(source_img, bbox):
     # Visualisation
     cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
     cv2.putText(source_img, f"Id: {car_id}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
+    cv2.putText(source_img, f"{current_car.GetStatus()}", (x + 50, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
 
 
 def GetDetections(outputs, img):
