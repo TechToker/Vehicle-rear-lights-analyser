@@ -7,8 +7,8 @@ from FramesStorage import *
 
 # Settings
 IS_FPS_SHOW = False
-BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
-CAR_ID_TO_PROCESS = 0 # Process only the car with this id; "-1" - process all
+BOUNDING_BOXES_LIMIT = 3 # if zero => unlimited
+CAR_ID_TO_PROCESS = 2 # Process only the car with this id; "-1" - process all
 
 # Settings for saving video
 cap = cv2.VideoCapture('./testing_data/road_2.mp4')
@@ -44,6 +44,7 @@ nmsTresh = 0.3
 frameStorage = FramesStorage()
 
 
+# TODO: Convert in into seconds
 def GetCurrentTimestamp():
     return cap.get(cv2.CAP_PROP_POS_MSEC)
 
@@ -61,21 +62,21 @@ def TailsProcessing(car):
     #     cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
 
 
-
-# Duplicate of method from TailDetector
-# TODO: Find more clever solution
+# TODO: Find more clever solution; (also it is duplicate of method from TailDetector)
 def GetColor(id):
     colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0],
               [255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0]]
     return colors[0]
 
 
+# TODO: Move it to helper method
 def DrawCarPath(source_img, path, car_id):
     # Loop from old to new points
     for ind in range(len(path)):
         color = GetColor(car_id)
 
         # TODO: FIX THAT
+        # TODO: Transparent color
         color[0] -= (len(path) - ind) * 5
         color[1] -= (len(path) - ind) * 5
         color[2] -= (len(path) - ind) * 5
@@ -142,7 +143,7 @@ def GetDetections(outputs, img):
 
     bounding_boxes_amount = BOUNDING_BOXES_LIMIT if BOUNDING_BOXES_LIMIT > 0 else len(indexes)
 
-    for i in range(0, bounding_boxes_amount):
+    for i in range(bounding_boxes_amount):
         ind = indexes[i][0]
         car_bbox = bbox[ind]
         BoundingBoxProcessing(img, car_bbox)

@@ -4,7 +4,9 @@ import math as math
 import cv2
 
 boxes_distance_threshold = 200
-boxes_size_threshold = [30, 30]
+
+# TODO: USE IT !
+boxes_size_threshold = [100, 100]
 
 # After what time remove undetectable car from list
 # In milliseconds
@@ -51,8 +53,7 @@ class FramesStorage:
     def GetCar(self, time, bounding_box, crop_img):
         car_frame = CarFrame(time, bounding_box, crop_img)
         newBoxCenter = [bounding_box[0] + int(bounding_box[2] / 2), bounding_box[1] + int(bounding_box[3] / 2)]
-
-        detectedCar = None
+        newBoxSize = [bounding_box[2], bounding_box[3]]
 
         if len(self.detected_cars) > 0:
 
@@ -62,6 +63,15 @@ class FramesStorage:
             for i in range(len(self.detected_cars)):
                 car = self.detected_cars[i]
 
+                # Bounding box size test
+                lastFrameSize = car.GetLastFrame().GetSize()
+
+                if abs(newBoxSize[0] - lastFrameSize[0]) > boxes_size_threshold[0] or abs(newBoxSize[1] - lastFrameSize[1]) > boxes_size_threshold[1]:
+                    #print("Bounding box fail")
+                    # Bounding box size check fail
+                    continue
+
+                # Centroid check
                 lastFrameCentroid = car.GetLastFrame().GetCentroid()
                 distanceToCenter = math.dist(lastFrameCentroid, newBoxCenter)
 
@@ -69,6 +79,7 @@ class FramesStorage:
                     nearDetectedCar = car
                     nearCarDistance = distanceToCenter
 
+            # TODO: Also check that this car is not used already!
             if nearCarDistance < boxes_distance_threshold:
                 detectedCar = nearDetectedCar
                 nearDetectedCar.AddFrame(car_frame)
@@ -79,6 +90,7 @@ class FramesStorage:
 
         return detectedCar
 
+    # TODO: Move it to Detected car method
     def GetCarPath(self, carId):
         car = next((car for car in self.detected_cars if car.GetId() == carId), None)
 

@@ -26,5 +26,8 @@ class CarFrame:
     def GetCentroid(self):
         return self.centroid
 
+    def GetSize(self):
+        return [self.bounding_box[2], self.bounding_box[3]]
+
     def GetImage(self):
         return self.image
