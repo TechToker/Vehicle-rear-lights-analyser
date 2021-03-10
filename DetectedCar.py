@@ -56,6 +56,7 @@ class DetectedCar:
 
         for i in range(len(self.frames) - 1, -1, -1):
             if self.frames[i].GetTime() < current_time - time_boundary_max:
+                print(f"Find brightness:{brightness}")
                 #print("QUIT")
                 return np.median(brightness)
 
@@ -63,6 +64,10 @@ class DetectedCar:
                 #print("Append")
                 brightness.append(self.frames[i].GetBrightness())
 
+        if len(brightness) == 0:
+            return np.nan
+
+        print(f"Find brightness:{brightness}")
         return np.median(brightness)
 
 

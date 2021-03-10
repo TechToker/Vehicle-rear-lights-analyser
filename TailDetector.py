@@ -9,7 +9,7 @@ BRAKE_ANALYSIS_TIME = 150
 BRAKE_ANALYSIS_TIME_1 = 300
 BRAKE_ANALYSIS_TIME_2 = 500
 
-STATUS_CHANGE_THRESHOLD = 15
+STATUS_CHANGE_THRESHOLD = 10
 
 def generate_colors(num):
     #r = lambda: np.random.randint(0, 255)
@@ -138,13 +138,7 @@ def DrawBestPair(img, pair, labels):
     return rects
 
 
-def TailDetector(img, IsPast):
-    #TODO: Remove this
-    if IsPast:
-        str = "[ Past ]"
-    else:
-        str = "[Actual]"
-
+def TailDetector(img):
     car_img_rgb = img.copy()
 
     img_yCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
@@ -202,76 +196,30 @@ def TailDetector(img, IsPast):
     #cv2.imshow(f"Name", test)
     # TODO: Find third brake light
 
-    return np.array(bboxes), img_yCrCb, total_mean_Y, total_mean_Cr
-
-
-# ! img in YCrCb
-def CalculateRednessInAreas(img, rects):
-    if len(rects) == 0:
-        return 0
-
-    # print(f"r: {rects.size}")
-    # print(f"r: {rects}")
-    # print(f"r: {rects is None}")
-
-    areas_mean = []
-    for i in range(len(rects)):
-        light_rect = rects[i]
-        crop_area = img[light_rect[1]: light_rect[3], light_rect[0]: light_rect[2]][:, :, 1]
-
-        #cv2.imshow(f"Light past{rects}", crop_area)
-        areas_mean.append(np.mean(crop_area.flatten()))
-
-    return np.mean(areas_mean)
-
-
-def CompareTails(img_from_past, img_actual):
-
-    res_past, past_img, past_mean_Y, past_mean_Cr = TailDetector(img_from_past, True)
-    res_current, cur_img, cur_mean_Y, cur_mean_Cr = TailDetector(img_actual, False)
-
-    # past_redness_mean = CalculateRednessInAreas(past_img, res_past)
-    # print(f"Past car: {past_surface_mean};")
-    #
-    # actual_redness_mean = CalculateRednessInAreas(cur_img, res_current)
-    # print(f"Actual car: {cur_surface_mean};")
-
-    #cv2.imshow(f"Light past", past_img)
-    #cv2.imshow(f"Light actual", cur_img)
-
-    # if past_mean_Cr > 0 and cur_mean_Y > 0 and abs(past_mean_Y - cur_mean_Y) > STATUS_CHANGE_THRESHOLD:
-    #     if cur_mean_Y > past_mean_Y:
-    #         print(f"[NewStatus]: {CarStatus.BRAKING}; Past: {past_mean_Y} Actual: {cur_mean_Y}")
-    #     else:
-    #         print(f"[NewStatus]: {CarStatus.NOT_BRAKING}; Past: {past_mean_Y} Actual: {cur_mean_Y}")
-
-    return past_mean_Y, cur_mean_Y, res_past, res_current
+    return np.array(bboxes), total_mean_Y
 
 
 def AnalyzeCarStatus(current_time, car):
-    prev_car_frame = car.GetFrameFromPast(current_time, BRAKE_ANALYSIS_TIME)
-    if prev_car_frame is None:
-        return []
-
-    actual_frame = car.GetLastFrame().GetImage()
-    past_frame = prev_car_frame.GetImage()
-
     # cv2.imshow("Past", past_frame)
     # cv2.imshow("Actual", actual_frame)
 
-    past_redness, actual_redness, bb_past, bb_current = CompareTails(past_frame, actual_frame)
+    actual_frame = car.GetLastFrame().GetImage()
+    bb_current, actual_redness = TailDetector(actual_frame)
+
+    #print(f"Set brt:{actual_redness}")
+
+    print(f"Set brt: {actual_redness}; Time: {current_time}")
     car.GetLastFrame().SetBrightness(actual_redness)
 
+    print("Past")
     past_redness = car.GetAverageBrightness(current_time, BRAKE_ANALYSIS_TIME_1, BRAKE_ANALYSIS_TIME_2)
+    print("Actual")
     actual_redness = car.GetAverageBrightness(current_time, 0, BRAKE_ANALYSIS_TIME)
-
-    #print(past_redness)
 
     print(f"[Past] Mean Y: {round(past_redness, 2)}")
     print(f"[Actual] Mean Y: {round(actual_redness, 2)}")
 
-    if abs(past_redness - actual_redness) > STATUS_CHANGE_THRESHOLD:
-        #if actual_redness > 55:
+    if past_redness != np.nan and actual_redness != np.nan and abs(past_redness - actual_redness) > STATUS_CHANGE_THRESHOLD:
         if actual_redness > past_redness:
             car.SetStatus(CarStatus.BRAKING)
             print(f"[NewStatus]: {CarStatus.BRAKING}; Past: {past_redness} Actual: {actual_redness}")

@@ -8,7 +8,7 @@ from FramesStorage import *
 # Settings
 IS_FPS_SHOW = False
 BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
-CAR_ID_TO_PROCESS = 1 # Process only the car with this id; "-1" - process all
+CAR_ID_TO_PROCESS = [0, 1, 2, 7] # Process only the car with this ids; Empty list - process all
 
 # Settings for saving video
 cap = cv2.VideoCapture('./testing_data/road_2.mp4')
@@ -51,20 +51,7 @@ def GetCurrentTimestamp():
 
 def TailsProcessing(car):
     rects = tl.AnalyzeCarStatus(GetCurrentTimestamp(), car)
-
     return rects
-
-
-
-
-    #tail_lights_bboxes = tl.TailDetector(cropped_img)
-
-    # WTF??? (Need to check that list not empty)
-    # if tail_lights_bboxes.size == 1:
-    #     return
-
-    # for bbox in tail_lights_bboxes:
-    #     cv2.rectangle(img, (x + bbox[0][0], y + bbox[0][1]), (x + bbox[1][0], y + bbox[1][1]), (52, 64, 235), 1)
 
 
 # TODO: Find more clever solution; (also it is duplicate of method from TailDetector)
@@ -107,7 +94,7 @@ def BoundingBoxProcessing(source_img, bbox):
     current_car = frameStorage.GetCar(timestamp, bbox, cropped_img)
     car_id = current_car.GetId()
 
-    if CAR_ID_TO_PROCESS >= 0 and not car_id == CAR_ID_TO_PROCESS:
+    if len(CAR_ID_TO_PROCESS) != 0 and car_id not in CAR_ID_TO_PROCESS:
         return source_img
 
     # Tracked path
