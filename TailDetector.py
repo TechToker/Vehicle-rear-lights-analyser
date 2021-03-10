@@ -9,7 +9,7 @@ BRAKE_ANALYSIS_TIME = 150
 BRAKE_ANALYSIS_TIME_1 = 300
 BRAKE_ANALYSIS_TIME_2 = 500
 
-STATUS_CHANGE_THRESHOLD = 10
+STATUS_CHANGE_THRESHOLD = 15
 
 def generate_colors(num):
     #r = lambda: np.random.randint(0, 255)
@@ -66,7 +66,7 @@ def SymmetryTest(img, n_labels, labels, stats, centroids, test_str):
                 # cv2.imshow("Image2", labeled_image)
                 # return light_pairs
 
-    #cv2.imshow(f"Image:{test_str}", labeled_image)
+    cv2.imshow(f"Image:{test_str}", labeled_image)
 
     return light_pairs
 

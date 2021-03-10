@@ -8,7 +8,7 @@ from FramesStorage import *
 # Settings
 IS_FPS_SHOW = False
 BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
-CAR_ID_TO_PROCESS = [0, 1, 2, 7] # Process only the car with this ids; Empty list - process all
+CAR_ID_TO_PROCESS = [2] # [0] #[1] # [0, 1, 7] # Process only the car with this ids; Empty list - process all
 
 # Settings for saving video
 cap = cv2.VideoCapture('./testing_data/road_2.mp4')
@@ -44,6 +44,14 @@ nmsTresh = 0.3
 frameStorage = FramesStorage()
 
 
+def GenerateColors(num):
+    r = lambda: np.random.randint(64, 255)
+    return [(r(), r(), r()) for _ in range(num)]
+
+
+color_palette = GenerateColors(30)
+
+
 # TODO: Convert in into seconds
 def GetCurrentTimestamp():
     return cap.get(cv2.CAP_PROP_POS_MSEC)
@@ -56,9 +64,7 @@ def TailsProcessing(car):
 
 # TODO: Find more clever solution; (also it is duplicate of method from TailDetector)
 def GetColor(id):
-    colors = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0],
-              [255, 0, 0], [0, 255, 0], [0, 0, 255], [128, 128, 128], [64, 64, 64], [255, 255, 0]]
-    return colors[0]
+    return np.array(color_palette[id])
 
 
 # TODO: Move it to helper method
@@ -69,14 +75,16 @@ def DrawCarPath(source_img, path, car_id):
 
         # TODO: FIX THAT
         # TODO: Transparent color
-        color[0] -= (len(path) - ind) * 5
-        color[1] -= (len(path) - ind) * 5
-        color[2] -= (len(path) - ind) * 5
+        color[0] -= (len(path) - ind) * 3
+        color[1] -= (len(path) - ind) * 3
+        color[2] -= (len(path) - ind) * 3
 
         point = path[ind]
 
-        # TODO: Add circle size changing
-        cv2.circle(source_img, (int(point[0]), int(point[1])), 3, color, -1)
+        # Circle size changing
+        circle_size = int(9 - (len(path) - ind) * 0.1)
+
+        cv2.circle(source_img, (int(point[0]), int(point[1])), circle_size, (int(color[0]), int(color[1]), int(color[2])), -1)
 
 
 def BoundingBoxProcessing(source_img, bbox):
@@ -99,10 +107,7 @@ def BoundingBoxProcessing(source_img, bbox):
 
     # Tracked path
     path = frameStorage.GetCarPath(car_id)
-
-    visualisation_img = source_img.copy()
-
-    DrawCarPath(visualisation_img, path, car_id)
+    #DrawCarPath(source_img, path, car_id)
 
     # Tails
     rects = TailsProcessing(current_car)
