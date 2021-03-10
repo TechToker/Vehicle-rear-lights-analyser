@@ -8,7 +8,7 @@ from FramesStorage import *
 # Settings
 IS_FPS_SHOW = False
 BOUNDING_BOXES_LIMIT = 0 # if zero => unlimited
-CAR_ID_TO_PROCESS = 2 # Process only the car with this id; "-1" - process all
+CAR_ID_TO_PROCESS = 1 # Process only the car with this id; "-1" - process all
 
 # Settings for saving video
 cap = cv2.VideoCapture('./testing_data/road_2.mp4')
@@ -50,7 +50,12 @@ def GetCurrentTimestamp():
 
 
 def TailsProcessing(car):
-    tl.AnalyzeCarStatus(GetCurrentTimestamp(), car)
+    rects = tl.AnalyzeCarStatus(GetCurrentTimestamp(), car)
+
+    return rects
+
+
+
 
     #tail_lights_bboxes = tl.TailDetector(cropped_img)
 
@@ -90,7 +95,7 @@ def DrawCarPath(source_img, path, car_id):
 def BoundingBoxProcessing(source_img, bbox):
     x, y, w, h = bbox[0], bbox[1], bbox[2], bbox[3]
     if x <= 0 or y <= 0 or w == 0 or h == 0:
-        return
+        return source_img
 
     cropped_img = source_img[y:y + h, x:x + w].copy()
 
@@ -103,20 +108,39 @@ def BoundingBoxProcessing(source_img, bbox):
     car_id = current_car.GetId()
 
     if CAR_ID_TO_PROCESS >= 0 and not car_id == CAR_ID_TO_PROCESS:
-        return
+        return source_img
 
     # Tracked path
     path = frameStorage.GetCarPath(car_id)
-    DrawCarPath(source_img, path, car_id)
+
+    visualisation_img = source_img.copy()
+
+    DrawCarPath(visualisation_img, path, car_id)
 
     # Tails
-    TailsProcessing(current_car)
+    rects = TailsProcessing(current_car)
+
+    if len(rects) == 0:
+        return
+
+    color = [0, 0, 0]
+    if current_car.GetStatus() == CarStatus.BRAKING:
+        color = [0, 0, 255]
+    elif current_car.GetStatus() == CarStatus.NOT_BRAKING:
+        color = [0, 0, 128]
+    else:
+        color = [0, 0, 0]
+
+    for i in range(len(rects)):
+        rect = rects[i]
+        cv2.rectangle(source_img, (x + rect[0], y + rect[1]), (x + rect[2], y + rect[3]), color, 2)
 
     # Visualisation
     cv2.rectangle(source_img, (x, y), (x + w, y + h), (52, 64, 235), 1)
     cv2.putText(source_img, f"Id: {car_id}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
-    cv2.putText(source_img, f"{current_car.GetStatus()}", (x + 50, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
+    #cv2.putText(source_img, f"{current_car.GetStatus()}", (x + 50, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (20, 20, 235), 2)
 
+    return source_img
 
 def GetDetections(outputs, img):
     hT, wT, cT = img.shape
@@ -147,7 +171,7 @@ def GetDetections(outputs, img):
     for i in range(bounding_boxes_amount):
         ind = indexes[i][0]
         car_bbox = bbox[ind]
-        BoundingBoxProcessing(img, car_bbox)
+        res_img = BoundingBoxProcessing(img, car_bbox)
 
     cv2.imshow("Image", img)
     out.write(img)

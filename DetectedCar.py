@@ -1,4 +1,5 @@
 import enum
+import numpy as np
 
 # In seconds
 FRAME_LIFETIME = 2000
@@ -49,3 +50,19 @@ class DetectedCar:
         for i in range(len(self.frames) - 1, -1, -1):
             if self.frames[i].GetTime() < current_time - time_ago:
                 return self.frames[i]
+
+    def GetAverageBrightness(self, current_time, time_boundary_min, time_boundary_max):
+        brightness = []
+
+        for i in range(len(self.frames) - 1, -1, -1):
+            if self.frames[i].GetTime() < current_time - time_boundary_max:
+                #print("QUIT")
+                return np.median(brightness)
+
+            if self.frames[i].GetTime() < current_time - time_boundary_min:
+                #print("Append")
+                brightness.append(self.frames[i].GetBrightness())
+
+        return np.median(brightness)
+
+

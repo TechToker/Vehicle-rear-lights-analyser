@@ -6,6 +6,7 @@ class CarFrame:
     centroid = []
 
     image = []
+    light_brightness = 0
 
     def __init__(self, frame_time, bounding_box, image):
         self.time = frame_time
@@ -31,3 +32,9 @@ class CarFrame:
 
     def GetImage(self):
         return self.image
+
+    def SetBrightness(self, brightness):
+        self.light_brightness = brightness
+
+    def GetBrightness(self):
+        return self.light_brightness

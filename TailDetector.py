@@ -5,8 +5,11 @@ from FramesStorage import *
 
 # In mls
 BRAKE_ANALYSIS_TIME = 150
-STATUS_CHANGE_THRESHOLD = 40
 
+BRAKE_ANALYSIS_TIME_1 = 300
+BRAKE_ANALYSIS_TIME_2 = 500
+
+STATUS_CHANGE_THRESHOLD = 15
 
 def generate_colors(num):
     #r = lambda: np.random.randint(0, 255)
@@ -17,7 +20,7 @@ def generate_colors(num):
             (206, 187, 204), (36, 72, 148), (158, 11, 209), (36, 1, 154), (96, 53, 119), (230, 60, 218)]
 
 
-def SymmetryTest(img, n_labels, labels, stats, centroids):
+def SymmetryTest(img, n_labels, labels, stats, centroids, test_str):
     source_img = img.copy()
     cv2.cvtColor(source_img, cv2.COLOR_GRAY2RGB)
 
@@ -46,7 +49,7 @@ def SymmetryTest(img, n_labels, labels, stats, centroids):
             j_cent_x, j_cent_y = int(centroids[j, 0]), int(centroids[j, 1])
 
             # Distance between left and right lights
-            dist_between_lights = 10
+            dist_between_lights = 20
 
             if abs(i_cent_y - j_cent_y) < dist_between_lights:
                 #print(f"Find a pair: {i}, {j}; dist:{i_cent_y}; {j_cent_y}; Color: {colors[i]}")
@@ -63,7 +66,8 @@ def SymmetryTest(img, n_labels, labels, stats, centroids):
                 # cv2.imshow("Image2", labeled_image)
                 # return light_pairs
 
-    #cv2.imshow("Image21", labeled_image)
+    #cv2.imshow(f"Image:{test_str}", labeled_image)
+
     return light_pairs
 
 
@@ -72,7 +76,7 @@ def GetThresholdImg(img):
     car_img_Cr = img[:, :, 1]
     car_img_Cb = img[:, :, 2]
 
-    block_size = 15
+    block_size = 11
     c_value = 7
     th_Y = cv2.adaptiveThreshold(car_img_Y, 150, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, c_value)
     th_Cr = cv2.adaptiveThreshold(car_img_Cr, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, block_size, c_value)
@@ -122,8 +126,8 @@ def DrawBestPair(img, pair, labels):
     ymax_j, xmax_j = np.max(np.where(labels == zone_j), 1)
     ymin_j, xmin_j = np.min(np.where(labels == zone_j), 1)
 
-    cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
-    cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
+    # cv2.rectangle(img, (xmin_i, ymin_i), (xmax_i, ymax_i), (0, 0, 255), 2)
+    # cv2.rectangle(img, (xmin_j, ymin_j), (xmax_j, ymax_j), (0, 0, 255), 2)
 
     #cv2.imshow(f"Output: {xmin_j}", img)
 
@@ -134,7 +138,13 @@ def DrawBestPair(img, pair, labels):
     return rects
 
 
-def TailDetector(img):
+def TailDetector(img, IsPast):
+    #TODO: Remove this
+    if IsPast:
+        str = "[ Past ]"
+    else:
+        str = "[Actual]"
+
     car_img_rgb = img.copy()
 
     img_yCrCb = cv2.cvtColor(img, cv2.COLOR_BGR2YCrCb)
@@ -145,31 +155,55 @@ def TailDetector(img):
     connectivity = 4
     n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(morpho_img, connectivity, cv2.CV_32S)
 
-    light_pairs = SymmetryTest(morpho_img, n_labels, labels, stats, centroids)
+    light_pairs = SymmetryTest(morpho_img, n_labels, labels, stats, centroids, str)
 
     pair_with_max_surface = []
     max_surface_value = 0
+    surface_mean = 0
 
     for pair in light_pairs:
         part_1 = pair[0]
         part_2 = pair[1]
 
-        surf1 = len([element for element in labels.flatten() if element == part_1])
-        surf2 = len([element for element in labels.flatten() if element == part_2])
+        flatten_labels = labels.flatten()
 
-        surface_sum = surf1 + surf2
+        surf1 = [element for element in flatten_labels if element == part_1]
+        surf2 = [element for element in flatten_labels if element == part_2]
+
+        surface_sum = len(surf1) + len(surf2)
 
         if surface_sum > max_surface_value:
             pair_with_max_surface = pair
             max_surface_value = surface_sum
+            surface_mean = np.mean(surf1) + np.mean(surf2)
 
     bboxes = DrawBestPair(img, pair_with_max_surface, labels)
 
+    total_mean_Cr = 0
+    total_mean_Y = 0
+
+    if len(pair_with_max_surface) > 0:
+        test = img_yCrCb[:, :, 1].copy()
+
+        sum1 = np.mean(test[labels == pair_with_max_surface[0]].flatten())
+        sum2 = np.mean(test[labels == pair_with_max_surface[1]].flatten())
+        total_mean_Cr = np.mean([sum1, sum2])
+
+        #print(f"Total mean Cr: {total_mean_Cr};")
+
+        test = img_yCrCb[:, :, 0].copy()
+
+        sum1 = np.mean(test[labels == pair_with_max_surface[0]].flatten())
+        sum2 = np.mean(test[labels == pair_with_max_surface[1]].flatten())
+        total_mean_Y = np.mean([sum1, sum2])
+
+        #print(f"{str} Mean Y: {round(total_mean_Y, 2)}")
+
+    #cv2.imshow(f"Name", test)
     # TODO: Find third brake light
 
-    return np.array(bboxes), img_yCrCb
+    return np.array(bboxes), img_yCrCb, total_mean_Y, total_mean_Cr
 
-import statistics
 
 # ! img in YCrCb
 def CalculateRednessInAreas(img, rects):
@@ -186,60 +220,74 @@ def CalculateRednessInAreas(img, rects):
         crop_area = img[light_rect[1]: light_rect[3], light_rect[0]: light_rect[2]][:, :, 1]
 
         #cv2.imshow(f"Light past{rects}", crop_area)
-        areas_mean.append(statistics.median(crop_area.flatten()))
+        areas_mean.append(np.mean(crop_area.flatten()))
 
-    return statistics.median(areas_mean)
+    return np.mean(areas_mean)
 
 
 def CompareTails(img_from_past, img_actual):
 
-    res_past, past_img = TailDetector(img_from_past)
-    res_current, cur_img = TailDetector(img_actual)
+    res_past, past_img, past_mean_Y, past_mean_Cr = TailDetector(img_from_past, True)
+    res_current, cur_img, cur_mean_Y, cur_mean_Cr = TailDetector(img_actual, False)
 
-    past_redness_mean = CalculateRednessInAreas(past_img, res_past)
-    #print(f"Past car: {past_redness_mean}; len: {len(res_past)}")
-
-    actual_redness_mean = CalculateRednessInAreas(cur_img, res_current)
-    #print(f"Actual car: {actual_redness_mean}; len: {len(res_current)}")
+    # past_redness_mean = CalculateRednessInAreas(past_img, res_past)
+    # print(f"Past car: {past_surface_mean};")
+    #
+    # actual_redness_mean = CalculateRednessInAreas(cur_img, res_current)
+    # print(f"Actual car: {cur_surface_mean};")
 
     #cv2.imshow(f"Light past", past_img)
     #cv2.imshow(f"Light actual", cur_img)
 
-    if abs(past_redness_mean - actual_redness_mean) > STATUS_CHANGE_THRESHOLD:
-        if actual_redness_mean > past_redness_mean:
-            print(f"NewStatus: {CarStatus.BRAKING}; Past: {past_redness_mean} Actual: {actual_redness_mean}")
-        else:
-            print(f"NewStatus: {CarStatus.NOT_BRAKING}; Past: {past_redness_mean} Actual: {actual_redness_mean}")
+    # if past_mean_Cr > 0 and cur_mean_Y > 0 and abs(past_mean_Y - cur_mean_Y) > STATUS_CHANGE_THRESHOLD:
+    #     if cur_mean_Y > past_mean_Y:
+    #         print(f"[NewStatus]: {CarStatus.BRAKING}; Past: {past_mean_Y} Actual: {cur_mean_Y}")
+    #     else:
+    #         print(f"[NewStatus]: {CarStatus.NOT_BRAKING}; Past: {past_mean_Y} Actual: {cur_mean_Y}")
 
-    return past_redness_mean, actual_redness_mean
+    return past_mean_Y, cur_mean_Y, res_past, res_current
 
 
 def AnalyzeCarStatus(current_time, car):
     prev_car_frame = car.GetFrameFromPast(current_time, BRAKE_ANALYSIS_TIME)
     if prev_car_frame is None:
-        return
+        return []
 
     actual_frame = car.GetLastFrame().GetImage()
     past_frame = prev_car_frame.GetImage()
 
-    past_redness, actual_redness = CompareTails(past_frame, actual_frame)
+    # cv2.imshow("Past", past_frame)
+    # cv2.imshow("Actual", actual_frame)
+
+    past_redness, actual_redness, bb_past, bb_current = CompareTails(past_frame, actual_frame)
+    car.GetLastFrame().SetBrightness(actual_redness)
+
+    past_redness = car.GetAverageBrightness(current_time, BRAKE_ANALYSIS_TIME_1, BRAKE_ANALYSIS_TIME_2)
+    actual_redness = car.GetAverageBrightness(current_time, 0, BRAKE_ANALYSIS_TIME)
+
+    #print(past_redness)
+
+    print(f"[Past] Mean Y: {round(past_redness, 2)}")
+    print(f"[Actual] Mean Y: {round(actual_redness, 2)}")
 
     if abs(past_redness - actual_redness) > STATUS_CHANGE_THRESHOLD:
+        #if actual_redness > 55:
         if actual_redness > past_redness:
             car.SetStatus(CarStatus.BRAKING)
-            print(f"NewStatus: {CarStatus.BRAKING}; Past: {past_redness} Actual: {actual_redness}")
+            print(f"[NewStatus]: {CarStatus.BRAKING}; Past: {past_redness} Actual: {actual_redness}")
         else:
             car.SetStatus(CarStatus.NOT_BRAKING)
-            print(f"NewStatus: {CarStatus.NOT_BRAKING}; Past: {past_redness} Actual: {actual_redness}")
+            print(f"[NewStatus]: {CarStatus.NOT_BRAKING}; Past: {past_redness} Actual: {actual_redness}")
 
+    return bb_current
 
 # Uncommit it to test it on signe image
 
-past_frame = cv2.imread('./testing_data/car_example_9.png', cv2.IMREAD_COLOR)
-cur_frame = cv2.imread('./testing_data/car_example_10.png', cv2.IMREAD_COLOR)
-
-CompareTails(past_frame, cur_frame)
-cv2.waitKey(0)
+# past_frame = cv2.imread('./testing_data/car_example_9.png', cv2.IMREAD_COLOR)
+# cur_frame = cv2.imread('./testing_data/car_example_10.png', cv2.IMREAD_COLOR)
+#
+# CompareTails(past_frame, cur_frame)
+# cv2.waitKey(0)
 
 # car_img = cv2.imread('./testing_data/car_example_5.png', cv2.IMREAD_COLOR)
 # TailDetector(car_img)
