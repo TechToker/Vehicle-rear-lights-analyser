@@ -4,8 +4,8 @@ Vehicle tracker
 Light detector
 
 
+![ezgif com-gif-maker (1)](https://user-images.githubusercontent.com/27694775/111885671-5103a000-89da-11eb-80ad-e6875c2ac145.gif)
 
-![ezgif com-gif-maker (1)](https://user-images.githubusercontent.com/27694775/111885616-e5213780-89d9-11eb-88bc-00486c0a638d.gif)
 
 
 
