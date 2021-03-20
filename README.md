@@ -1,5 +1,5 @@
 
-Vehicle tracker
+Vehicle detector and tracker
 
 Light detector
 
