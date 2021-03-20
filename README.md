@@ -15,3 +15,7 @@ Light detector
 
 
 Status analyser
+
+
+![ezgif com-gif-maker (2)](https://user-images.githubusercontent.com/27694775/111886169-43034e80-89dd-11eb-9a47-1411c00a485f.gif)
+
