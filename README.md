@@ -18,3 +18,6 @@ YOLOv3 + simple centroid tracker
 
 ![ezgif com-gif-maker (2)](https://user-images.githubusercontent.com/27694775/111886169-43034e80-89dd-11eb-9a47-1411c00a485f.gif)
 
+Video sources:
+https://youtu.be/BqY9JZ3O7e8
+https://youtu.be/vffgKEGG-8Y
